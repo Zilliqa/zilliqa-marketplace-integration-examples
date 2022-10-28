@@ -1,14 +1,10 @@
-import { FC, useEffect } from "react"
+import { FC } from "react"
 import { SimpleGrid, Box, Image, Center, Spinner } from '@chakra-ui/react'
 import ReactPlayer from 'react-player';
-import { contextContainer } from "../../code/contextContainer";
+import { contextContainer } from "~/code/contextContainer";
 
 
-export type OwnedNftsProps = {
-  address: string
-}
-
-const OwnedNfts: FC<OwnedNftsProps> = (props) => {
+const OwnedNfts: FC = () => {
 
   const {
     loadingNfts,

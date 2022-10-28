@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import { logError, logInfo } from '../code/logger';
-import { connectZilPay } from '../code/zillpayUtils';
-import styles from '../styles/Home.module.css'
+import { useEffect } from 'react'
 import { Box, Heading, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
-import OwnedNfts from '../components/componentOwnedNfts/componentOwnedNfts';
-import { contextContainer } from '../code/contextContainer';
+import { logError, logInfo } from '~/code/logger';
+import { connectZilPay } from '~/code/zillpayUtils';
+import styles from '~/styles/Home.module.css'
+import OwnedNfts from '~/components/componentOwnedNfts/componentOwnedNfts';
+import PutNftsOnSale from '~/components/componentPutNftsOnSale/componentPutNftsOnSale';
+import { contextContainer } from '~/code/contextContainer';
 
 
 export default function Home() {
@@ -98,10 +99,10 @@ export default function Home() {
 
             <TabPanels>
               <TabPanel>
-                <OwnedNfts address={currentlyConnectedWalletAddress.base16} />
+                <OwnedNfts />
               </TabPanel>
               <TabPanel>
-                <p>two!</p>
+                <PutNftsOnSale />
               </TabPanel>
               <TabPanel>
                 <p>three!</p>
