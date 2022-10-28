@@ -1,10 +1,7 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect } from "react"
 import { SimpleGrid, Box, Image, Center, Spinner } from '@chakra-ui/react'
-import useSWR from "swr";
 import ReactPlayer from 'react-player';
-import { AssetType } from "../../code/assetTypes"
-import { IndexerApi } from "../../code/indexerApi"
-import { logInfo } from "../../code/logger"
+import { contextContainer } from "../../code/contextContainer";
 
 
 export type OwnedNftsProps = {
@@ -14,47 +11,9 @@ export type OwnedNftsProps = {
 const OwnedNfts: FC<OwnedNftsProps> = (props) => {
 
   const {
-    address
-  } = props
-
-  const [ loadingNfts, setLoadingNfts ] = useState<boolean>(true) 
-  const [ currentAddress, setCurrentAddress ] = useState<string>('')
-  const [ ownedNFTs, setOwnedNfts ] = useState<Array<AssetType>>([])
-  const [ cursor, setCursor ] = useState<number>(0)
-
-  const indexerApi = new IndexerApi()
-
-  useSWR(
-      ["swr_fetch_owned_nfts", currentAddress, cursor],
-      async (_, address: string, cursor: number) => {
-        logInfo('OwnedNFTs', 'fetching NFTs', { address })
-        if (address.length === 0) {
-          return
-        }
-
-        await indexerApi.allOwnedAssetsInfoByAddresses([address], cursor).then(
-          (fetchedNfts) => {
-            setOwnedNfts((curr) => [...curr, ...fetchedNfts])
-
-            if (fetchedNfts.length >= IndexerApi.allOwnedAssetsInfoByAddress_ItemsPerCursor) {
-              setCursor((cursor) => cursor + IndexerApi.allOwnedAssetsInfoByAddress_ItemsPerCursor)              
-            } else {
-              setLoadingNfts(false)
-            }
-          }
-        )
-      },
-      { revalidateOnFocus: false }
-  );
-
-  useEffect(() => {
-    if (address !== currentAddress) {
-      setOwnedNfts([])
-      setCurrentAddress(address)
-      setCursor(0)
-      setLoadingNfts(true)
-    }
-  }, [ address ])
+    loadingNfts,
+    ownedNFTs
+	} = contextContainer.useContainer();
 
   return (
     <>

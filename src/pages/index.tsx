@@ -4,16 +4,14 @@ import { connectZilPay } from '../code/zillpayUtils';
 import styles from '../styles/Home.module.css'
 import { Box, Heading, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
 import OwnedNfts from '../components/componentOwnedNfts/componentOwnedNfts';
+import { contextContainer } from '../code/contextContainer';
 
-export type WalletAdress = {
-  base16: string
-  bech32: string
-}
 
 export default function Home() {
-
-  const [zilPay, setZilPay] = useState<any>(undefined);
-  const [currentlyConnectedWalletAddress, setCurrentlyConnectedWalletAddress] = useState<WalletAdress | undefined>(undefined);
+  const {
+    zilPay, setZilPay,
+    currentlyConnectedWalletAddress, setCurrentlyConnectedWalletAddress,
+	} = contextContainer.useContainer();
 
   useEffect(() => {
     async function setupZilpay() {
