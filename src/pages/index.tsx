@@ -1,17 +1,23 @@
 import { useEffect } from 'react'
-import { Box, Heading, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
-import { logError, logInfo } from '~/code/logger';
+import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons'
+import { Box, Heading, Tabs, Text, TabList, TabPanels, Tab, TabPanel, Button, Center, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Icon } from '@chakra-ui/react'
+import { logInfo } from '~/code/logger';
 import { connectZilPay } from '~/code/zillpayUtils';
 import styles from '~/styles/Home.module.css'
 import OwnedNfts from '~/components/componentOwnedNfts/componentOwnedNfts';
 import PutNftsOnSale from '~/components/componentPutNftsOnSale/componentPutNftsOnSale';
+import SetSpender from '~/components/componentSetSpender/componentSetSpender';
 import { contextContainer } from '~/code/contextContainer';
 
 
 export default function Home() {
   const {
-    zilPay, setZilPay,
+    setZilPay,
     currentlyConnectedWalletAddress, setCurrentlyConnectedWalletAddress,
+    isOpen, onClose,
+    modalBody,
+    transactionInProgress,
+    transactionError,
 	} = contextContainer.useContainer();
 
   useEffect(() => {
@@ -31,34 +37,6 @@ export default function Home() {
     setupZilpay()
   }, [])
 
-
-  useEffect(() => {
-    if (!zilPay) {
-      return
-    }
-
-    if (!zilPay.wallet?.defaultAccount) {
-      logError('wallet setup', 'no wallet in the ZillPay')
-      return
-    }
-
-    setCurrentlyConnectedWalletAddress({
-      base16: zilPay.wallet?.defaultAccount.base16.toLowerCase(),
-      bech32: zilPay.wallet?.defaultAccount.bech32.toLowerCase()
-    })
-
-    try {
-        zilPay.wallet?.observableAccount().subscribe(() => {
-          logInfo(['main page', 'wallet change'], 'ZilPay wallet address changed')
-            setCurrentlyConnectedWalletAddress({
-              base16: zilPay.wallet?.defaultAccount.base16.toLowerCase(),
-              bech32: zilPay.wallet?.defaultAccount.bech32.toLowerCase()
-            })
-        });
-    } catch(error) {
-        logError(['wallet setup', 'listening for wallet change'], `${error}`, { wallet: zilPay?.wallet })        
-    }
-}, [zilPay]);
 
   return (
     <div className={styles.container}>
@@ -90,16 +68,20 @@ export default function Home() {
 
       { currentlyConnectedWalletAddress ? (
         <>
-          <Tabs isFitted variant='enclosed'>
+          <Tabs isFitted variant='enclosed' mb={500}>
             <TabList>
               <Tab>Owned NFTs</Tab>
-              <Tab>Put on sale</Tab>
-              <Tab>Buy</Tab>
+              <Tab>1. Enable sale</Tab>
+              <Tab>2. Put on sale</Tab>
+              <Tab>3. Purchase</Tab>
             </TabList>
 
             <TabPanels>
               <TabPanel>
                 <OwnedNfts />
+              </TabPanel>
+              <TabPanel>
+                <SetSpender />
               </TabPanel>
               <TabPanel>
                 <PutNftsOnSale />
@@ -112,6 +94,40 @@ export default function Home() {
         </>
       ) : <></>}
       
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        closeOnOverlayClick={false}
+        size="lg"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Transaction progress</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+            { modalBody }
+            </Text>
+            <Center>
+              {
+                transactionInProgress ? <Spinner />
+                : transactionError ? <WarningIcon color="red" boxSize="3em"/>
+                : <CheckCircleIcon color="green" boxSize="3em" />
+              }
+            </Center>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme='blue'
+              onClick={onClose}
+              disabled={transactionInProgress}
+            >
+              ok
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
     </div>
   )

@@ -1,7 +1,11 @@
-import { Box, Center, Checkbox, Heading, Spinner, Tab, Table, TableCaption, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Tfoot, Th, Thead, Tr } from "@chakra-ui/react";
-import { FC } from "react";
-import { getAssertedValue } from "~/code/envUtils";
+import { Box, Button, Center, Checkbox, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
+import { FC, useState } from "react";
 import { contextContainer } from "~/code/contextContainer";
+import { FixedPriceContractApi } from "~/code/fixedPriceContractApi";
+import { BN } from "bn.js";
+import { logError, logInfo, logSuccess } from "~/code/logger";
+import { updateTransactionStatus } from "~/code/zillpayUtils";
+import { ArrowForwardIcon } from "@chakra-ui/icons";
 
 
 const PutNftsOnSale: FC = () => {
@@ -10,16 +14,81 @@ const PutNftsOnSale: FC = () => {
     ownedNFTs,
     switchNftSaleSelection,
     nftsSelectedForSale,
+    zilPay,
+    fixedPriceContractAddress,
+    setTransactionInProgress,
+    onOpen,
+    setModalBody,
+    setTransactionError,
 	} = contextContainer.useContainer();
 
+  const putAssetsOnSaleOnSuccess = () => {
+    logSuccess('putAssetsOnSale', 'assets put on sale')
+    setModalBody('Selected assets are now on sale')
+    setTransactionInProgress(false)
+  }
+
+  const putAssetsOnSaleOnFailure = (error: any) => {
+    logError('putAssetsOnSale', 'error while putting assets on sale', { error })
+    setModalBody(error)
+    setTransactionError(true)
+    setTransactionInProgress(false)
+  } 
+
+  const putAssetsOnSale = async () => {
+    setTransactionInProgress(true)
+    onOpen()
+    setTransactionError(false)
+
+    try {
+      const fixedPriceContractApi = new FixedPriceContractApi(
+        zilPay,
+        fixedPriceContractAddress
+      )
+
+      setModalBody("Sign transaction in ZillPay")
+
+      const tx = await fixedPriceContractApi.putAssetsOnSale(
+        nftsSelectedForSale, new BN(500), new BN(999999999)
+      )
+
+      logInfo('putAssetsOnSale', 'transaction submitted', { tx })
+      setModalBody(`Transaction id ${tx.ID}`)
+
+      updateTransactionStatus(
+        zilPay,
+        tx.ID,
+        putAssetsOnSaleOnSuccess,
+        putAssetsOnSaleOnFailure
+      )
+    } catch (error) {
+      putAssetsOnSaleOnFailure(error)
+    }
+  }
+
+  const [priceValue, setPriceValue] = useState('')
+  const handlePriceInputChange = (e: any) => setPriceValue(e.target.value)
+  const priceValueError = priceValue.length === 0 || Number.isNaN(priceValue)
+
+  const [durationValue, setDurationValue] = useState<string>('')
+  const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
+  const durationValueError = durationValue.length === 0 || Number.isNaN(durationValue)
+
   return (<>
-    <Box mb={2} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
-        <Heading as='h6' size='xs'>
-          Fixed price contract details
-        </Heading>
-        <div>
-          Address (base16): { getAssertedValue(process.env.NEXT_PUBLIC_FIXED_PRICE_ADDRESS, 'NEXT_PUBLIC_FIXED_PRICE_ADDRESS')}
-        </div>
+    <Box mb={5} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
+      <Heading as='h6' size='m'>
+        SetBatchOrder step
+      </Heading>
+      <Text>
+        After setting fixed price contract as a spender on zrc6 contracts
+        you can use SetBatchOrder transition on a fixed price contract to list NFTs for sale.
+        All the NFTs in the SetBatchOrder call will have the same sell params.
+        You can only set one price for one token per transition call. Meaning, if you want to list using XIDR and XSGD
+        then you nee to make two SetBatchOrder transition calls
+      </Text>
+      <Text mt={3}>
+        Fixed price contract address (base16): { fixedPriceContractAddress }
+      </Text>
     </Box>
 
     <Tabs isFitted variant='enclosed'>
@@ -51,13 +120,19 @@ const PutNftsOnSale: FC = () => {
                     <Td>{ nft.contractAddress }:{ nft.tokenId }</Td>
                   </Tr>
                 ))}
-
+                
                 {
-                  loadingNfts && <Center>
-                    <Spinner />
-                  </Center>
+                  loadingNfts && <Tr>
+                    <Td></Td>
+                    <Td>
+                      <Center>
+                          <Spinner />
+                        </Center>
+                    </Td>
+                    <Td></Td>
+                  </Tr>
                 }
-            </Tbody>
+              </Tbody>
               <Tfoot>
                 <Tr>
                   <Th>Name</Th>
@@ -69,9 +144,43 @@ const PutNftsOnSale: FC = () => {
           </TableContainer>
         </TabPanel>
         <TabPanel>
-          <Heading as='h6' size='xs'>
+          <Heading as='h6' size='md' mb={2}>
             You selected {nftsSelectedForSale.length} for sale
           </Heading>
+
+          <FormControl isInvalid={priceValueError}>
+            <FormLabel>Price</FormLabel>
+            <NumberInput>
+              <NumberInputField value={priceValue} onChange={handlePriceInputChange} />
+            </NumberInput>
+            <FormHelperText>
+              NFTs sale price in ZILs
+            </FormHelperText>
+            { priceValueError && <FormErrorMessage>Price is required.</FormErrorMessage> }
+          </FormControl>
+          <FormControl isInvalid={durationValueError}>
+            <FormLabel>Duration</FormLabel>
+            <NumberInput>
+              <NumberInputField value={durationValue} onChange={handleDurationInputChange} />
+            </NumberInput>
+            <FormHelperText>
+              NFTs sale duration in hours
+            </FormHelperText>
+            { durationValueError && <FormErrorMessage>Duration is required.</FormErrorMessage>}
+          </FormControl>
+
+          <Flex>
+            <Spacer />
+            <Button
+              variant='outline'
+              colorScheme='green'
+              aria-label='Put on sale'
+              disabled={priceValueError || durationValueError || nftsSelectedForSale.length === 0}
+              onClick={putAssetsOnSale}
+            >
+              Put on Sale <ArrowForwardIcon ml={2} />
+            </Button>
+          </Flex>
         </TabPanel>
       </TabPanels>
     </Tabs>

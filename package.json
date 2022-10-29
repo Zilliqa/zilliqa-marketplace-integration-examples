@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^2.0.11",
     "@chakra-ui/react": "^2.3.6",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "@zilliqa-js/util": "^3.3.4",
+    "@zilliqa-js/zilliqa": "^3.3.4",
     "framer-motion": "^6",
     "next": "13.0.0",
     "react": "18.2.0",

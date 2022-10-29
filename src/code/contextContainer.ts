@@ -3,15 +3,14 @@ import { createContainer } from "unstated-next";
 import { AssetType } from "./assetTypes"
 import { IndexerApi } from "./indexerApi"
 import useSWR from "swr";
-import { logInfo } from "./logger";
+import { logError, logInfo } from "./logger";
+import { AssetIdentifier, getAssetIdentifier } from "./assetIdentifier";
+import { getAssertedValue } from "./envUtils";
+import { useDisclosure } from "@chakra-ui/react";
 
 export type WalletAdress = {
   base16: string
   bech32: string
-}
-
-function getAssetIdentifier(nft: AssetType) {
-  return `${nft.contractAddress}:${nft.tokenId}`
 }
 
 const useCreateAssetContext = () => {
@@ -21,9 +20,16 @@ const useCreateAssetContext = () => {
   const [ loadingNfts, setLoadingNfts ] = useState<boolean>(true) 
   const [ ownedNFTs, setOwnedNfts ] = useState<Array<AssetType>>([])
   const [ nftLoadingCursor, setNftLoadingCursor ] = useState<number>(0)
-  const [ nftsSelectedForSale, setNftsSelectedForSale ] = useState<Array<string>>([])
+  const [ nftsSelectedForSale, setNftsSelectedForSale ] = useState<Array<AssetIdentifier>>([])
 
+  const fixedPriceContractAddress = getAssertedValue(process.env.NEXT_PUBLIC_FIXED_PRICE_ADDRESS, 'NEXT_PUBLIC_FIXED_PRICE_ADDRESS')
   const indexerApi = new IndexerApi()
+
+  // transactions modal
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [ modalBody, setModalBody ] = useState<string>("")
+  const [ transactionInProgress, setTransactionInProgress ] = useState<boolean>(false)
+  const [ transactionError, setTransactionError ] = useState<boolean>(false)
 
   /**
    * Fetching all Owned NFTs
@@ -54,12 +60,62 @@ const useCreateAssetContext = () => {
   );
 
   /**
-   * resetting state when wallet changes
+   * Wallet connection state handlers
    */
+
+  // reset state when address changed
   useEffect(() => {
+    logInfo('wallet connection', 'resseting wallet related state')
     setOwnedNfts([])
+    setNftsSelectedForSale([])
     setNftLoadingCursor(0)
   }, [ currentlyConnectedWalletAddress ])
+
+
+  const walletChangeDetected = (currentWallet: WalletAdress) => {
+    const afterChangeWallet: WalletAdress = {
+      base16: zilPay.wallet?.defaultAccount.base16.toLowerCase(),
+      bech32: zilPay.wallet?.defaultAccount.bech32.toLowerCase()
+    }
+
+    if (currentWallet?.base16 === afterChangeWallet.base16) {
+      logInfo(['wallet connection', 'wallet change'], 'false wallet change trigger')
+      return
+    }
+    
+    logInfo(['wallet connection', 'wallet change'], 'ZilPay wallet address changed', {
+      from: currentWallet?.base16,
+      to: afterChangeWallet.base16,
+    })
+    setCurrentlyConnectedWalletAddress({
+      base16: zilPay.wallet?.defaultAccount.base16.toLowerCase(),
+      bech32: zilPay.wallet?.defaultAccount.bech32.toLowerCase()
+    })
+  }
+
+  useEffect(() => {
+    if (!zilPay) {
+      return
+    }
+
+    if (!zilPay.wallet?.defaultAccount) {
+      logError('wallet connection', 'no wallet in the ZillPay')
+      return
+    }
+
+    const newWallet: WalletAdress = {
+      base16: zilPay.wallet?.defaultAccount.base16.toLowerCase(),
+      bech32: zilPay.wallet?.defaultAccount.bech32.toLowerCase()
+    }
+
+    setCurrentlyConnectedWalletAddress(newWallet)
+
+    try {
+        zilPay.wallet?.observableAccount().subscribe(() => walletChangeDetected(newWallet));
+    } catch(error) {
+        logError(['wallet connection', 'listening for wallet change'], `${error}`, { wallet: zilPay?.wallet })        
+    }
+  }, [zilPay]);
 
   /**
    * removing/adding NFT for sale
@@ -89,8 +145,13 @@ const useCreateAssetContext = () => {
     ownedNFTs, setOwnedNfts,
     nftLoadingCursor, setNftLoadingCursor,
     nftsSelectedForSale, setNftsSelectedForSale,
+    fixedPriceContractAddress,
     indexerApi,
     switchNftSaleSelection,
+    isOpen, onOpen, onClose,
+    modalBody, setModalBody,
+    transactionInProgress, setTransactionInProgress,
+    transactionError, setTransactionError,
   }
 }
 

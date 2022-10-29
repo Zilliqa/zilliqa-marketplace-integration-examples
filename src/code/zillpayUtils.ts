@@ -1,5 +1,7 @@
+import { getAssertedValue } from "./envUtils"
 import { logError, logInfo, logSuccess } from "./logger"
 
+export const ExpectedZilliqaNetwork = getAssertedValue(process.env.NEXT_PUBLIC_ZILLIQA_NET_URL, 'NEXT_PUBLIC_ZILLIQA_NET_URL')
 
 export async function connectZilPay(zilPay: any) {
   if (!zilPay) {
@@ -10,11 +12,27 @@ export async function connectZilPay(zilPay: any) {
   logInfo('Connecting to the wallet', 'connecting to the ZilPay wallet')
 
   if (zilPay.wallet.isConnect) {
+    if (zilPay.wallet.http !== ExpectedZilliqaNetwork) {
+      logInfo(
+          "Connecting to the wallet",
+          `Set ZilPay network to ${ExpectedZilliqaNetwork}`
+      );
+      return false
+    }
+
     logInfo('Connecting to the wallet', 'ZilPay is already connected')
     return true
   }
 
   if (await zilPay.wallet.connect()) {
+    if (zilPay.wallet.http !== ExpectedZilliqaNetwork) {
+      logInfo(
+          "Connecting to the wallet",
+          `Set ZilPay network to ${ExpectedZilliqaNetwork}`
+      );
+      return false
+    }
+
     logSuccess('Connecting to the wallet', 'Successfully connected to the to the ZilPay wallet')
     return true
   }
@@ -38,10 +56,10 @@ export function isZilPayEnable(zilPay: any): boolean {
         return false
     }
 
-    if (zilPay.wallet.http !== "https://dev-api.zilliqa.com") {
+    if (zilPay.wallet.http !== ExpectedZilliqaNetwork) {
         logInfo(
             "Wallet connection check",
-            "Set ZilPay network to https://dev-api.zilliqa.com"
+            `Set ZilPay network to ${ExpectedZilliqaNetwork}`
         );
         return false
     }
@@ -53,3 +71,33 @@ export function isZilPayEnable(zilPay: any): boolean {
 export function getCurrentlyConnectedHexAddress(zilPay: any) {
     return zilPay.wallet?.defaultAccount?.base16.toLowerCase() || "";
 }
+
+export function updateTransactionStatus(
+  zilPay: any,
+  tx: string,
+  onSuccess: ((Tx?: any) => Promise<void>) | ((Tx?: any) => void),
+  onError: ((err: any) => Promise<void>) | ((err: any) => void)
+): void {
+  const subscription = zilPay.wallet
+      .observableTransaction(tx)
+      .subscribe(async (hash: any) => {
+          subscription.unsubscribe();
+          try {
+              const tx = await zilPay.blockchain.getTransaction(hash);
+              const success = tx.receipt.success;
+
+              if (success) {
+                  await onSuccess(tx);
+              } else {
+                  await onError(`unsuccessful transaction ${JSON.stringify(tx)}`);
+              }
+          } catch (error) {
+              logError(
+                  'updateTransactionStatus',
+                  'error while observing transaction',
+                  {  tx, error}
+              )
+              await onError(error);
+          }
+      });
+};
