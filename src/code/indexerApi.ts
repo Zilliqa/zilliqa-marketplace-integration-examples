@@ -1,75 +1,7 @@
 import { AssetType } from "./assetTypes";
 import { getAssertedValue } from "./envUtils";
+import { allOwnedAssetsInfoByAddressesQuery, createAssetByIdQueryEntry, wholeListingData } from "./indexerQueries";
 
-export const wholeListingData = `{
-  sourceId
-  data {
-    ZILLIQA_FIXED_PRICE {
-      othersOffers {
-        maker
-        unit
-        amount
-        currency
-        expirationInBlockNumber
-      }
-      ownerOffers {
-        maker
-        unit
-        amount
-        currency
-        expirationInBlockNumber
-      }
-      marketplaceContractAddress
-    }
-    ZILLIQA_ENGLISH_AUCTION {
-      startingBid {
-        unit
-        amount
-        currency
-      }
-      winnerBid {
-        maker
-        unit
-        amount
-      }
-      bids {
-        maker
-        unit
-        amount
-        dest
-      }
-      state
-      maker
-      marketplaceContractAddress
-      expirationInBlockNumber
-    }
-    fulfilled {
-      __typename
-      ... on FulfilledZilliqaEnglishAuctionV1 {
-        id
-        marketplaceContractAddress
-        amount
-        buyer
-        currency
-        seller
-        unit
-        assetRecipient
-        paymentTokensRecipient
-        royaltyRecipient
-      }
-      ... on FulfilledZilliqaFixedPriceListingV1 {
-        id
-        marketplaceContractAddress
-        amount
-        buyer
-        currency
-        seller
-        side
-        unit
-      }
-    }
-  }
-}`
 
 export class IndexerApi {
   private indexerKey: string;
@@ -80,52 +12,11 @@ export class IndexerApi {
     this.indexerUrl = getAssertedValue(process.env.NEXT_PUBLIC_INDEXER_URL, 'NEXT_PUBLIC_INDEXER_URL')
   }
 
-  public static allOwnedAssetsInfoByAddress_ItemsPerCursor = 20
   public async allOwnedAssetsInfoByAddresses(
     addresses: Array<string>,
     cursor: number
   ): Promise<Array<AssetType>> {
-    const query = `query {
-      ${
-        addresses.map(
-          (address, idx) => `
-            user${idx}: user(input: { address: "${address}" }) {
-              address
-              ownedAssets(
-                input: {
-                  restrictBy: {
-                    type: SOURCE, id: "${process.env.NEXT_PUBLIC_MARKETPLACE_SOURCEID!}"
-                  },
-                  filter:{
-                    after: "${cursor}",
-                    limit: ${IndexerApi.allOwnedAssetsInfoByAddress_ItemsPerCursor}
-                  }
-                }
-              ) {
-                assetsList {
-                  tokenId
-                  tokenUri
-                  name
-                  resourceMimetype
-                  description
-                  externalUrl
-                  ownerAddress
-                  minterAddress
-                  contractAddress
-                  attributes {
-                    traitType
-                    value
-                  }
-                  listingData ${wholeListingData}
-                }
-              }
-            }
-          `
-        ).join(',')
-      }
-    }`
-
-
+    const query = allOwnedAssetsInfoByAddressesQuery(addresses, cursor)
     const results = (await this.handleIndexerQuery(query)).data
 
     const nfts: Array<AssetType> = []
@@ -137,6 +28,19 @@ export class IndexerApi {
     )
 
     return nfts;
+  }
+
+  public async getAssetsInfo(
+    assets: Array<{ contractAddress: string, tokenId: string } >
+  ): Promise<Array<AssetType>> {
+    const results = await this.handleIndexerQuery(`query {
+        ${assets.map(
+          (a, idx) => createAssetByIdQueryEntry(a.contractAddress, a.tokenId, `asset_${idx}`) 
+        ).join(',\n')}
+      }`
+    )
+
+    return Object.values(results.data)
   }
 
   private async handleIndexerQuery(

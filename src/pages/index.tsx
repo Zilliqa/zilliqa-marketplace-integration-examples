@@ -7,6 +7,7 @@ import styles from '~/styles/Home.module.css'
 import OwnedNfts from '~/components/componentOwnedNfts/componentOwnedNfts';
 import PutNftsOnSale from '~/components/componentPutNftsOnSale/componentPutNftsOnSale';
 import SetSpender from '~/components/componentSetSpender/componentSetSpender';
+import BuyNft from '~/components/componentBuyNft/componentBuyNft';
 import { contextContainer } from '~/code/contextContainer';
 
 
@@ -70,9 +71,9 @@ export default function Home() {
         <>
           <Tabs isFitted variant='enclosed' mb={500}>
             <TabList>
-              <Tab>Owned NFTs</Tab>
+              <Tab>0. Owned NFTs</Tab>
               <Tab>1. Enable sale</Tab>
-              <Tab>2. Put on sale</Tab>
+              <Tab>2. Add sell offer</Tab>
               <Tab>3. Purchase</Tab>
             </TabList>
 
@@ -87,7 +88,7 @@ export default function Home() {
                 <PutNftsOnSale />
               </TabPanel>
               <TabPanel>
-                <p>three!</p>
+                <BuyNft />
               </TabPanel>
             </TabPanels>
           </Tabs>

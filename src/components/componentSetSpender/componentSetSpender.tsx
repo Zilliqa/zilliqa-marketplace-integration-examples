@@ -28,7 +28,13 @@ const SetSpender: FC = () => {
 
   const setSpenderOnZRC6OnFailure = (error: any) => {
     logError('setSpender', 'error while setting spender', { error })
-    setModalBody(error)
+
+    if (error?.receipt?.exceptions?.length > 0) {
+      setModalBody(error?.receipt?.exceptions[0])
+    } else {
+      setModalBody(error)
+    }
+
     setTransactionError(true)
     setTransactionInProgress(false)
   }
@@ -94,6 +100,9 @@ const SetSpender: FC = () => {
     {
       nftContracts.map(
         (nftContract, idx) => {
+          const ownedAssetsInGivenContract = ownedNFTs
+            .filter((nft) => nft.contractAddress === nftContract)
+
           return (
             <div key={idx}>
               <Heading as='h6' size='xs'>
@@ -108,9 +117,8 @@ const SetSpender: FC = () => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    { ownedNFTs
-                      .filter((nft) => nft.contractAddress === nftContract)
-                      .map((nft, idx) => (
+                    { 
+                      ownedAssetsInGivenContract.map((nft, idx) => (
                         <Tr key={idx}>
                           <Td>{ nft.name }</Td>
                           <Td>{ nft.contractAddress }:{ nft.tokenId }</Td>
@@ -134,7 +142,7 @@ const SetSpender: FC = () => {
                   aria-label='Set Spender on assets'
                   onClick={() => setSpenderOnZRC6(nftContract)}
                 >
-                  Set Spender <ArrowForwardIcon ml={2} />
+                  Set Spender on {ownedAssetsInGivenContract.length} NFTs<ArrowForwardIcon ml={2} />
                 </Button>
               </Flex>
             </div>

@@ -1,4 +1,4 @@
-import { BaseContractApi } from "./BaseContractApi";
+import { BaseContractApi } from "./baseContractApi";
 
 export class ZRC6Api extends BaseContractApi {
   public async setSpender(

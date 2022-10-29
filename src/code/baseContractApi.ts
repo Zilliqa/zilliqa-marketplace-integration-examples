@@ -16,7 +16,8 @@ export class BaseContractApi {
 
   protected async callTransitionThroughZillpay(
     transition: string,
-    params: any
+    params: any,
+    amount: string = "0"
   ) {
     logInfo('Contract API', 'call', {
       contractAddress: this.contractAddress,
@@ -31,7 +32,7 @@ export class BaseContractApi {
       transition,
       params,
       {
-        amount: "0",
+        amount,
         gasPrice: DEFAULT_GAS.gasPrice,
         gasLimit: DEFAULT_GAS.gasLimit,
       },

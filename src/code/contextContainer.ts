@@ -7,6 +7,8 @@ import { logError, logInfo } from "./logger";
 import { AssetIdentifier, getAssetIdentifier } from "./assetIdentifier";
 import { getAssertedValue } from "./envUtils";
 import { useDisclosure } from "@chakra-ui/react";
+import { ContractAssetSaleData, FixedPriceContractApi } from "./fixedPriceContractApi";
+import { allOwnedAssetsInfoByAddress_ItemsPerCursor } from "./indexerQueries";
 
 export type WalletAdress = {
   base16: string
@@ -21,6 +23,9 @@ const useCreateAssetContext = () => {
   const [ ownedNFTs, setOwnedNfts ] = useState<Array<AssetType>>([])
   const [ nftLoadingCursor, setNftLoadingCursor ] = useState<number>(0)
   const [ nftsSelectedForSale, setNftsSelectedForSale ] = useState<Array<AssetIdentifier>>([])
+
+  const [ contractAssetSaleData, setContractAssetSaleData ] = useState<Array<ContractAssetSaleData>>([])
+  const [ assetSaleData, setAssetSaleData ] = useState<Array<ContractAssetSaleData & AssetType>>([])
 
   const fixedPriceContractAddress = getAssertedValue(process.env.NEXT_PUBLIC_FIXED_PRICE_ADDRESS, 'NEXT_PUBLIC_FIXED_PRICE_ADDRESS')
   const indexerApi = new IndexerApi()
@@ -48,8 +53,8 @@ const useCreateAssetContext = () => {
         (fetchedNfts) => {
           setOwnedNfts((curr) => [...curr, ...fetchedNfts])
 
-          if (fetchedNfts.length >= IndexerApi.allOwnedAssetsInfoByAddress_ItemsPerCursor) {
-            setNftLoadingCursor((cursor) => cursor + IndexerApi.allOwnedAssetsInfoByAddress_ItemsPerCursor)              
+          if (fetchedNfts.length >= allOwnedAssetsInfoByAddress_ItemsPerCursor) {
+            setNftLoadingCursor((cursor) => cursor + allOwnedAssetsInfoByAddress_ItemsPerCursor)              
           } else {
             setLoadingNfts(false)
           }
@@ -138,6 +143,50 @@ const useCreateAssetContext = () => {
     )
   }
 
+  /**
+   * Getting NFT on sale in given sale smart contract
+   */
+   useSWR(
+    ["swr_fetch_items_on_sale", zilPay],
+    async (_, zilPay) => {
+      logInfo(['Items on sale', 'contract data'], 'fetching', { fixedPriceContractAddress })
+      const fixedPriceApi = new FixedPriceContractApi(zilPay, fixedPriceContractAddress)
+
+      setContractAssetSaleData(await fixedPriceApi.getAssetsOnSale())
+    },
+    { revalidateOnFocus: false }
+  );
+
+  useSWR(
+    ["swr_indexer_data_about_items_on_sale", contractAssetSaleData],
+    async (_, contractAssetSaleData) => {
+      if (contractAssetSaleData.length === 0) {
+        return
+      }
+
+      logInfo(['Items on sale', 'indexer data'], 'fetching', { count: contractAssetSaleData.length })
+      const detailedAssets = await indexerApi.getAssetsInfo(contractAssetSaleData.map(
+        (cas) => ({
+          contractAddress: cas.assetContract,
+          tokenId: cas.assetId
+        }
+      )))
+
+      const merged = contractAssetSaleData.map(
+        (cas) => ({
+          ...cas,
+          ...detailedAssets.find(
+            (da) => da.contractAddress === cas.assetContract
+              && da.tokenId === cas.assetId
+          )!
+        })
+      )
+
+      setAssetSaleData(merged)
+    },
+    { revalidateOnFocus: false }
+  );
+
   return {
     zilPay, setZilPay,
     currentlyConnectedWalletAddress, setCurrentlyConnectedWalletAddress,
@@ -152,6 +201,8 @@ const useCreateAssetContext = () => {
     modalBody, setModalBody,
     transactionInProgress, setTransactionInProgress,
     transactionError, setTransactionError,
+    contractAssetSaleData, setContractAssetSaleData,
+    assetSaleData, setAssetSaleData,
   }
 }
 

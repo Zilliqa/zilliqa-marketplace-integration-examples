@@ -30,7 +30,13 @@ const PutNftsOnSale: FC = () => {
 
   const putAssetsOnSaleOnFailure = (error: any) => {
     logError('putAssetsOnSale', 'error while putting assets on sale', { error })
-    setModalBody(error)
+
+    if (error?.receipt?.exceptions?.length > 0) {
+      setModalBody(error?.receipt?.exceptions[0])
+    } else {
+      setModalBody(error)
+    }
+
     setTransactionError(true)
     setTransactionInProgress(false)
   } 
@@ -49,7 +55,7 @@ const PutNftsOnSale: FC = () => {
       setModalBody("Sign transaction in ZillPay")
 
       const tx = await fixedPriceContractApi.putAssetsOnSale(
-        nftsSelectedForSale, new BN(500), new BN(999999999)
+        nftsSelectedForSale, new BN(priceValue), new BN(999999999)
       )
 
       logInfo('putAssetsOnSale', 'transaction submitted', { tx })
@@ -70,9 +76,9 @@ const PutNftsOnSale: FC = () => {
   const handlePriceInputChange = (e: any) => setPriceValue(e.target.value)
   const priceValueError = priceValue.length === 0 || Number.isNaN(priceValue)
 
-  const [durationValue, setDurationValue] = useState<string>('')
-  const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
-  const durationValueError = durationValue.length === 0 || Number.isNaN(durationValue)
+  // const [durationValue, setDurationValue] = useState<string>('')
+  // const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
+  // const durationValueError = durationValue.length === 0 || Number.isNaN(durationValue)
 
   return (<>
     <Box mb={5} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
@@ -93,8 +99,8 @@ const PutNftsOnSale: FC = () => {
 
     <Tabs isFitted variant='enclosed'>
       <TabList>
-        <Tab>Select NFTs to put on sale ({nftsSelectedForSale.length})</Tab>
-        <Tab>Create sale</Tab>
+        <Tab>A. Select NFTs to put on sale ({nftsSelectedForSale.length})</Tab>
+        <Tab>B. Create sale</Tab>
       </TabList>
 
       <TabPanels>
@@ -135,9 +141,9 @@ const PutNftsOnSale: FC = () => {
               </Tbody>
               <Tfoot>
                 <Tr>
+                  <Th>Select for sale</Th>
                   <Th>Name</Th>
                   <Th>Identifier</Th>
-                  <Th>Select for sale</Th>
                 </Tr>
               </Tfoot>
             </Table>
@@ -158,7 +164,7 @@ const PutNftsOnSale: FC = () => {
             </FormHelperText>
             { priceValueError && <FormErrorMessage>Price is required.</FormErrorMessage> }
           </FormControl>
-          <FormControl isInvalid={durationValueError}>
+          {/* <FormControl isInvalid={durationValueError}>
             <FormLabel>Duration</FormLabel>
             <NumberInput>
               <NumberInputField value={durationValue} onChange={handleDurationInputChange} />
@@ -167,7 +173,7 @@ const PutNftsOnSale: FC = () => {
               NFTs sale duration in hours
             </FormHelperText>
             { durationValueError && <FormErrorMessage>Duration is required.</FormErrorMessage>}
-          </FormControl>
+          </FormControl> */}
 
           <Flex>
             <Spacer />
@@ -175,7 +181,7 @@ const PutNftsOnSale: FC = () => {
               variant='outline'
               colorScheme='green'
               aria-label='Put on sale'
-              disabled={priceValueError || durationValueError || nftsSelectedForSale.length === 0}
+              disabled={priceValueError || nftsSelectedForSale.length === 0}
               onClick={putAssetsOnSale}
             >
               Put on Sale <ArrowForwardIcon ml={2} />
