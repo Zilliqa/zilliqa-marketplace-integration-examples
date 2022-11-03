@@ -1,11 +1,12 @@
-import { Box, Button, Center, Checkbox, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
-import { FC, useState } from "react";
+import { Box, Button, Center, Checkbox, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Select, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
+import { FC } from "react";
 import { contextContainer } from "~/code/contextContainer";
 import { FixedPriceContractApi } from "~/code/fixedPriceContractApi";
 import { BN } from "bn.js";
 import { logError, logInfo, logSuccess } from "~/code/logger";
 import { updateTransactionStatus } from "~/code/zillpayUtils";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
+import { sgdTokenAddress, zillTokenAddress } from "~/code/tokens";
 
 
 const PutNftsOnSale: FC = () => {
@@ -20,7 +21,13 @@ const PutNftsOnSale: FC = () => {
     onOpen,
     setModalBody,
     setTransactionError,
+    priceValue, setPriceValue,
+    paymentToken, setPaymentToken,
 	} = contextContainer.useContainer();
+
+  const handlePriceInputChange = (e: any) => setPriceValue(e.target.value)
+  const handlePaymentTokenChange = (e: any) => setPaymentToken(e.target.value)
+  const priceValueError = priceValue.length === 0 || Number.isNaN(priceValue)
 
   const putAssetsOnSaleOnSuccess = () => {
     logSuccess('putAssetsOnSale', 'assets put on sale')
@@ -39,7 +46,7 @@ const PutNftsOnSale: FC = () => {
 
     setTransactionError(true)
     setTransactionInProgress(false)
-  } 
+  }
 
   const putAssetsOnSale = async () => {
     setTransactionInProgress(true)
@@ -55,7 +62,10 @@ const PutNftsOnSale: FC = () => {
       setModalBody("Sign transaction in ZillPay")
 
       const tx = await fixedPriceContractApi.putAssetsOnSale(
-        nftsSelectedForSale, new BN(priceValue), new BN(999999999)
+        nftsSelectedForSale,
+        new BN(priceValue),
+        new BN(999999999),
+        paymentToken
       )
 
       logInfo('putAssetsOnSale', 'transaction submitted', { tx })
@@ -71,10 +81,6 @@ const PutNftsOnSale: FC = () => {
       putAssetsOnSaleOnFailure(error)
     }
   }
-
-  const [priceValue, setPriceValue] = useState('')
-  const handlePriceInputChange = (e: any) => setPriceValue(e.target.value)
-  const priceValueError = priceValue.length === 0 || Number.isNaN(priceValue)
 
   // const [durationValue, setDurationValue] = useState<string>('')
   // const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
@@ -174,6 +180,11 @@ const PutNftsOnSale: FC = () => {
             </FormHelperText>
             { durationValueError && <FormErrorMessage>Duration is required.</FormErrorMessage>}
           </FormControl> */}
+
+          <Select onChange={handlePaymentTokenChange} >
+            <option value={zillTokenAddress}>ZIL</option>
+            <option value={sgdTokenAddress}>XSGD</option>
+          </Select>
 
           <Flex>
             <Spacer />

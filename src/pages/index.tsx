@@ -26,12 +26,13 @@ export default function Home() {
       const extensionZilPayObject = (window as any)?.zilPay
 
       logInfo(['main page', 'wallet setup'], 'trying to set up zillpay')
+
       if (extensionZilPayObject) {
           await connectZilPay(extensionZilPayObject)
           setZilPay(extensionZilPayObject);
       } else {
           logInfo(['main page', 'wallet setup'], 'ZilPay extension not detected, next check scheduled')
-          setTimeout(setupZilpay, 200)
+          setTimeout(setupZilpay, 1000)
       }
     }
 

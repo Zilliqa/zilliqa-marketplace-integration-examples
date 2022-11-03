@@ -9,6 +9,7 @@ import { getAssertedValue } from "./envUtils";
 import { useDisclosure } from "@chakra-ui/react";
 import { ContractAssetSaleData, FixedPriceContractApi } from "./fixedPriceContractApi";
 import { allOwnedAssetsInfoByAddress_ItemsPerCursor } from "./indexerQueries";
+import { zillTokenAddress } from "./tokens";
 
 export type WalletAdress = {
   base16: string
@@ -26,6 +27,9 @@ const useCreateAssetContext = () => {
 
   const [ contractAssetSaleData, setContractAssetSaleData ] = useState<Array<ContractAssetSaleData>>([])
   const [ assetSaleData, setAssetSaleData ] = useState<Array<ContractAssetSaleData & AssetType>>([])
+
+  const [priceValue, setPriceValue] = useState('')
+  const [paymentToken, setPaymentToken] = useState(zillTokenAddress)
 
   const fixedPriceContractAddress = getAssertedValue(process.env.NEXT_PUBLIC_FIXED_PRICE_ADDRESS, 'NEXT_PUBLIC_FIXED_PRICE_ADDRESS')
   const indexerApi = new IndexerApi()
@@ -203,6 +207,8 @@ const useCreateAssetContext = () => {
     transactionError, setTransactionError,
     contractAssetSaleData, setContractAssetSaleData,
     assetSaleData, setAssetSaleData,
+    priceValue, setPriceValue,
+    paymentToken, setPaymentToken,
   }
 }
 

@@ -1,8 +1,8 @@
 import { AssetIdentifier, getTokenAddress, getTokenId } from "./assetIdentifier";
 import BN from 'bn.js';
 import { BaseContractApi } from "./baseContractApi";
+import { zillTokenAddress } from "./tokens";
 
-const zillTokenAddress = "0x0000000000000000000000000000000000000000";
 export const sellerOrderSide = "0" 
 
 export type ContractAssetSaleData = {
@@ -54,6 +54,9 @@ export class FixedPriceContractApi extends BaseContractApi {
     message: string,
     signature: string
   ) {
+    // we need to transfer zills only if paying by zills
+    const zilsToTansfer = paymentTokenAddr === zillTokenAddress ? price : "0"
+
     return await this.callTransitionThroughZillpay(
       "FulfillOrder",
       [
@@ -98,14 +101,15 @@ export class FixedPriceContractApi extends BaseContractApi {
             "value": signature
         }        
       ],
-      price
+      zilsToTansfer
     )
   }
 
   public async putAssetsOnSale(
     assets: Array<AssetIdentifier>,
-    salePriceInQa: BN,
-    saleExpiryBlock: BN
+    salePrice: BN,
+    saleExpiryBlock: BN,
+    paymentTokenAddress: string
   ) {
     return await this.callTransitionThroughZillpay(
       "SetBatchOrder",
@@ -119,8 +123,8 @@ export class FixedPriceContractApi extends BaseContractApi {
               arguments: [
                   getTokenAddress(asset),
                   getTokenId(asset),
-                  zillTokenAddress,
-                  `${salePriceInQa}`,
+                  paymentTokenAddress,
+                  `${salePrice}`,
                   `${sellerOrderSide}`,
                   `${saleExpiryBlock}`,
               ]

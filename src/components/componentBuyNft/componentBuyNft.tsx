@@ -7,19 +7,9 @@ import { contextContainer } from "~/code/contextContainer";
 import { getAssertedValue } from "~/code/envUtils";
 import { ContractAssetSaleData, FixedPriceContractApi, sellerOrderSide } from "~/code/fixedPriceContractApi";
 import { logError, logInfo, logSuccess } from "~/code/logger";
+import { paymentTokenAddressName } from "~/code/tokens";
 import { updateTransactionStatus } from "~/code/zillpayUtils";
 
-
-
-const zilToken = '0x0000000000000000000000000000000000000000'
-
-function paymentTokenAddressName(contractAddress: string) {
-  if (contractAddress === zilToken) {
-    return 'ZIL'
-  }
-
-  return 'unknown'
-}
 
 const BuyNft: FC = () => {
   const {
@@ -66,7 +56,7 @@ const BuyNft: FC = () => {
       /**
        * <Purchase voucher generation block>
        */
-       setModalBody("Creating voucher")
+      setModalBody("Creating voucher")
       const voucherExpiryBlock = '99999999999'
 
       const message = CreateMessage(
@@ -131,10 +121,75 @@ const BuyNft: FC = () => {
           In this code example the purchase voucher is generated on the fly locally, see |Purchase voucher generation block| in the componentBuyNft.tsx
           This voucher logic can be leveraged to limit the number of purchases available to a given user by generating in on the backend and sending limited number of them to a given user.
         </Text>
+
+        <Text>
+          If you are buying with ZRC2 tokens (like XSGD) make sure that you set the spending allowance first. Otherwise, you will get insufficient funds error
+        </Text>
         <Text mt={3}>
           Fixed price contract address (base16): { fixedPriceContractAddress }
         </Text>
       </Box>
+
+
+      {
+        assetSaleData
+          .filter(
+            (as) => as.ownerAddress === currentlyConnectedWalletAddress?.base16
+          ).length > 0 &&
+          <>
+            <Heading as='h6' size='m'>
+              Your sales
+            </Heading>
+
+            <TableContainer>
+              <Table variant='striped'>
+                <Thead>
+                  <Tr>
+                    <Th>Name</Th>
+                    <Th>Identifier</Th>
+                    <Th>Price</Th>
+                    <Th></Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  { assetSaleData
+                    .filter(
+                      (as) => as.ownerAddress === currentlyConnectedWalletAddress?.base16
+                    )
+                    .map((nft, idx) => (
+                    <Tr key={idx}>
+                      <Td>{ nft.name }</Td>
+                      <Td>{ nft.contractAddress }:{ nft.tokenId }</Td>
+                      <Td>{  nft.price } ({ paymentTokenAddressName(nft.paymentTokenContract) })</Td>
+                      <Td>
+                      <Button
+                        variant='outline'
+                        colorScheme='green'
+                        aria-label='Buy'
+                        disabled={true}
+                      >
+                        Buy <ArrowForwardIcon ml={2} />
+                      </Button>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+                <Tfoot>
+                  <Tr>
+                    <Th>Name</Th>
+                    <Th>Identifier</Th>
+                    <Th>Price</Th>
+                    <Th></Th>
+                  </Tr>
+                </Tfoot>
+              </Table>
+            </TableContainer>
+          </>
+        }
+
+      <Heading as='h6' size='m'>
+        Others offers
+      </Heading>
 
       <TableContainer>
         <Table variant='striped'>
@@ -147,7 +202,11 @@ const BuyNft: FC = () => {
             </Tr>
           </Thead>
           <Tbody>
-            { assetSaleData.map((nft, idx) => (
+            { assetSaleData
+              .filter(
+                (as) => as.ownerAddress !== currentlyConnectedWalletAddress?.base16
+              )
+              .map((nft, idx) => (
               <Tr key={idx}>
                 <Td>{ nft.name }</Td>
                 <Td>{ nft.contractAddress }:{ nft.tokenId }</Td>
