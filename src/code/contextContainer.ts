@@ -29,6 +29,8 @@ const useCreateAssetContext = () => {
   const [ assetSaleData, setAssetSaleData ] = useState<Array<ContractAssetSaleData & AssetType>>([])
 
   const [priceValue, setPriceValue] = useState('')
+  const [durationValue, setDurationValue] = useState<string>('')
+  const [estimatedSaleEndBlock, setEstimatedSaleEndBlock] = useState<number>(999999)
   const [paymentToken, setPaymentToken] = useState(zillTokenAddress)
 
   const fixedPriceContractAddress = getAssertedValue(process.env.NEXT_PUBLIC_FIXED_PRICE_ADDRESS, 'NEXT_PUBLIC_FIXED_PRICE_ADDRESS')
@@ -208,6 +210,8 @@ const useCreateAssetContext = () => {
     contractAssetSaleData, setContractAssetSaleData,
     assetSaleData, setAssetSaleData,
     priceValue, setPriceValue,
+    durationValue, setDurationValue,
+    estimatedSaleEndBlock, setEstimatedSaleEndBlock,
     paymentToken, setPaymentToken,
   }
 }
