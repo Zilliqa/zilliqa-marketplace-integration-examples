@@ -1,12 +1,13 @@
 import { Box, Button, Center, Checkbox, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Select, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { contextContainer } from "~/code/contextContainer";
 import { FixedPriceContractApi } from "~/code/fixedPriceContractApi";
 import { BN } from "bn.js";
 import { logError, logInfo, logSuccess } from "~/code/logger";
 import { updateTransactionStatus } from "~/code/zillpayUtils";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
-import { sgdTokenAddress, zillTokenAddress } from "~/code/tokens";
+import { referenceZrc2TokenAddress, sgdTokenAddress, zillTokenAddress } from "~/code/tokens";
+import { convertHourToBlocknum } from "~/code/zilliqaApi";
 
 
 const PutNftsOnSale: FC = () => {
@@ -23,11 +24,30 @@ const PutNftsOnSale: FC = () => {
     setTransactionError,
     priceValue, setPriceValue,
     paymentToken, setPaymentToken,
+    durationValue, setDurationValue,
+    estimatedSaleEndBlock, setEstimatedSaleEndBlock,
 	} = contextContainer.useContainer();
 
   const handlePriceInputChange = (e: any) => setPriceValue(e.target.value)
+  const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
   const handlePaymentTokenChange = (e: any) => setPaymentToken(e.target.value)
+
   const priceValueError = priceValue.length === 0 || Number.isNaN(priceValue)
+  const durationValueError = durationValue.length === 0 || Number.isNaN(durationValue)
+
+  useEffect(() => {
+      const durationNumberValue = Number.parseInt(durationValue)
+
+      if (Number.isNaN(durationNumberValue)) {
+        return
+      }
+
+      convertHourToBlocknum(durationNumberValue).then(
+        (newEstimatedSaleEndBlock) => setEstimatedSaleEndBlock(newEstimatedSaleEndBlock)
+      ).catch(
+        (error) => logError('expected sale end block', 'error', error)
+      )
+  }, [durationValue])
 
   const putAssetsOnSaleOnSuccess = () => {
     logSuccess('putAssetsOnSale', 'assets put on sale')
@@ -64,7 +84,7 @@ const PutNftsOnSale: FC = () => {
       const tx = await fixedPriceContractApi.putAssetsOnSale(
         nftsSelectedForSale,
         new BN(priceValue),
-        new BN(999999999),
+        new BN(estimatedSaleEndBlock),
         paymentToken
       )
 
@@ -81,10 +101,6 @@ const PutNftsOnSale: FC = () => {
       putAssetsOnSaleOnFailure(error)
     }
   }
-
-  // const [durationValue, setDurationValue] = useState<string>('')
-  // const handleDurationInputChange = (e: any) => setDurationValue(e.target.value)
-  // const durationValueError = durationValue.length === 0 || Number.isNaN(durationValue)
 
   return (<>
     <Box mb={5} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
@@ -156,35 +172,51 @@ const PutNftsOnSale: FC = () => {
           </TableContainer>
         </TabPanel>
         <TabPanel>
-          <Heading as='h6' size='md' mb={2}>
-            You selected {nftsSelectedForSale.length} for sale
+          <Heading as='h6' size='md' mb={2} color={nftsSelectedForSale.length ? 'black' : 'red'}>
+            You selected {nftsSelectedForSale.length} NFT(s) for sale
           </Heading>
+          
+          <Flex>
+            <FormControl isInvalid={priceValueError}>
+              <FormLabel>Price</FormLabel>
+              <NumberInput>
+                <NumberInputField value={priceValue} onChange={handlePriceInputChange} />
+              </NumberInput>
+              <FormHelperText>
+                NFTs sale price in ZILs
+              </FormHelperText>
+              { priceValueError && <FormErrorMessage>Price is required.</FormErrorMessage> }
+            </FormControl>
 
-          <FormControl isInvalid={priceValueError}>
-            <FormLabel>Price</FormLabel>
-            <NumberInput>
-              <NumberInputField value={priceValue} onChange={handlePriceInputChange} />
-            </NumberInput>
-            <FormHelperText>
-              NFTs sale price in ZILs
-            </FormHelperText>
-            { priceValueError && <FormErrorMessage>Price is required.</FormErrorMessage> }
-          </FormControl>
-          {/* <FormControl isInvalid={durationValueError}>
-            <FormLabel>Duration</FormLabel>
-            <NumberInput>
-              <NumberInputField value={durationValue} onChange={handleDurationInputChange} />
-            </NumberInput>
-            <FormHelperText>
-              NFTs sale duration in hours
-            </FormHelperText>
-            { durationValueError && <FormErrorMessage>Duration is required.</FormErrorMessage>}
-          </FormControl> */}
+            <FormControl ml={2}>
+              <FormLabel>Payment token</FormLabel>
+              <Select onChange={handlePaymentTokenChange} >
+                <option value={zillTokenAddress}>ZIL</option>
+                <option value={sgdTokenAddress}>XSGD</option>
+                <option value={referenceZrc2TokenAddress}>ZRC2</option>
+              </Select>
+            </FormControl>
+          </Flex>
 
-          <Select onChange={handlePaymentTokenChange} >
-            <option value={zillTokenAddress}>ZIL</option>
-            <option value={sgdTokenAddress}>XSGD</option>
-          </Select>
+          <Flex mt={3}>
+            <FormControl isInvalid={durationValueError}>
+              <FormLabel>Duration</FormLabel>
+              <NumberInput>
+                <NumberInputField value={durationValue} onChange={handleDurationInputChange} />
+              </NumberInput>
+              <FormHelperText>
+                NFTs sale duration in hours
+              </FormHelperText>
+              { durationValueError && <FormErrorMessage>Duration is required.</FormErrorMessage>}
+            </FormControl>
+
+            <FormControl ml={2}>
+              <FormLabel>Estimated sale end block</FormLabel>
+              <NumberInput>
+                <NumberInputField readOnly={true} placeholder={`${estimatedSaleEndBlock}`} />
+              </NumberInput>
+            </FormControl>      
+          </Flex>
 
           <Flex>
             <Spacer />

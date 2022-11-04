@@ -58,7 +58,7 @@ export class FixedPriceContractApi extends BaseContractApi {
     const zilsToTansfer = paymentTokenAddr === zillTokenAddress ? price : "0"
 
     return await this.callTransitionThroughZillpay(
-      "FulfillOrder",
+      "FulfillOrderSigned",
       [
         {
             "vname":"token_address",
