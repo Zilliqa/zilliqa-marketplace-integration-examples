@@ -1,4 +1,4 @@
-import { Box, Button, Center, Checkbox, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Select, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
+import { Box, Button, Center, Checkbox, Code, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Heading, IconButton, Input, NumberInput, NumberInputField, Select, Spacer, Spinner, Tab, Table, TableContainer, TabList, TabPanel, TabPanels, Tabs, Tbody, Td, Text, Tfoot, Th, Thead, Tr, useDisclosure } from "@chakra-ui/react";
 import { FC, useEffect } from "react";
 import { contextContainer } from "~/code/contextContainer";
 import { FixedPriceContractApi } from "~/code/fixedPriceContractApi";
@@ -115,7 +115,7 @@ const PutNftsOnSale: FC = () => {
         then you nee to make two SetBatchOrder transition calls
       </Text>
       <Text mt={3}>
-        Fixed price contract address (base16): { fixedPriceContractAddress }
+        Fixed price contract address (base16): <Code>{ fixedPriceContractAddress }</Code>
       </Text>
     </Box>
 

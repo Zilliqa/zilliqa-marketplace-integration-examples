@@ -1,5 +1,5 @@
 import { ArrowForwardIcon } from "@chakra-ui/icons";
-import { Box, Text, Button, Heading, Table, TableContainer, Tbody, Td, Tfoot, Th, Thead, Tr } from "@chakra-ui/react";
+import { Box, Text, Button, Heading, Table, TableContainer, Tbody, Td, Tfoot, Th, Thead, Tr, Code } from "@chakra-ui/react";
 import { FC } from "react"
 import { AssetType } from "~/code/assetTypes";
 import { CreateMessage, SignMessage } from "~/code/buyOrderUtils";
@@ -115,18 +115,18 @@ const BuyNft: FC = () => {
     <>
       <Box mb={5} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
         <Heading as='h6' size='m'>
-          FulfillOrder step
+          FulfillOrderSigned step
         </Heading>
         <Text>
-          In this code example the purchase voucher is generated on the fly locally, see |Purchase voucher generation block| in the componentBuyNft.tsx
+          In this code example the purchase voucher is generated on the fly locally, see <Code>Purchase voucher generation block</Code> in the <Code>componentBuyNft.tsx</Code>
           This voucher logic can be leveraged to limit the number of purchases available to a given user by generating in on the backend and sending limited number of them to a given user.
         </Text>
 
-        <Text>
-          If you are buying with ZRC2 tokens (like XSGD) make sure that you set the spending allowance first. Otherwise, you will get insufficient funds error
+        <Text mt={2}>
+          If you are buying with ZRC2 tokens (like XSGD) make sure that you set the spending allowance first, by calling <Code>IncreateAllowance</Code> with the <Code>{fixedPriceContractAddress}</Code> as spender parameter on the ZRC2 contract as the buyer. Otherwise, you will get insufficient funds error
         </Text>
         <Text mt={3}>
-          Fixed price contract address (base16): { fixedPriceContractAddress }
+          Fixed price contract address (base16): <Code>{ fixedPriceContractAddress }</Code>
         </Text>
       </Box>
 

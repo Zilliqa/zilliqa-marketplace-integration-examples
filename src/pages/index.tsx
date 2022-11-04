@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons'
-import { Box, Heading, Tabs, Text, TabList, TabPanels, Tab, TabPanel, Button, Center, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Icon } from '@chakra-ui/react'
+import { Box, Heading, Tabs, Text, TabList, TabPanels, Tab, TabPanel, Button, Center, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Icon, Code } from '@chakra-ui/react'
 import { logInfo } from '~/code/logger';
 import { connectZilPay } from '~/code/zillpayUtils';
 import styles from '~/styles/Home.module.css'
@@ -51,14 +51,14 @@ export default function Home() {
       <Box mb={10} bg="lightgray" borderRadius='lg' w='100%' p={4} color='black'>
         { currentlyConnectedWalletAddress ? (
           <>
-            <Heading as='h6' size='xs'>
+            <Heading as='h6' size='m'>
               Currently connected wallet details
             </Heading>
             <div>
-              Wallet address (base16): { currentlyConnectedWalletAddress.base16 }
+              Wallet address (base16): <Code>{ currentlyConnectedWalletAddress.base16 }</Code>
             </div>
             <div>
-              Wallet address (bech32): { currentlyConnectedWalletAddress.bech32 }
+              Wallet address (bech32): <Code>{ currentlyConnectedWalletAddress.bech32 }</Code>
             </div>
           </>
         ) : (

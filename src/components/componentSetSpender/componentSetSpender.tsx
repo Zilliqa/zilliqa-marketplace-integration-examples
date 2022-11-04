@@ -1,5 +1,5 @@
 import { ArrowForwardIcon } from "@chakra-ui/icons";
-import { Box, Button, Flex, Heading, Spacer, Table, TableContainer, Tbody, Td, Text, Tfoot, Th, Thead, Tr } from "@chakra-ui/react";
+import { Box, Button, Code, Flex, Heading, Spacer, Table, TableContainer, Tbody, Td, Text, Tfoot, Th, Thead, Tr } from "@chakra-ui/react";
 import { FC } from "react";
 import { contextContainer } from "~/code/contextContainer";
 import { logError, logInfo, logSuccess } from "~/code/logger";
@@ -93,7 +93,7 @@ const SetSpender: FC = () => {
         setSpender on three contracts thus three transactions are required
       </Text>
       <Text mt={3}>
-        Fixed price contract address (base16): { fixedPriceContractAddress }
+        Fixed price contract address (base16): <Code>{ fixedPriceContractAddress }</Code>
       </Text>
     </Box>
 
