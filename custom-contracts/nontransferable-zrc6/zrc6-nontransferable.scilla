@@ -188,6 +188,12 @@ field spenders: Map Uint256 ByStr20 = Emp Uint256 ByStr20
 (* Mapping from token owner to operators authorized by the token owner *)
 field operators: Map ByStr20 (Map ByStr20 Bool) = Emp ByStr20 (Map ByStr20 Bool)
 
+(* Flag to control who can transfer the tokens *)
+(* If false, only the contract owner can transfer the tokens *)
+(* If true, the token owner/spender/operator can perform the transfer *)
+(* Defaults to false *)
+field is_transferable: Bool = false
+
 (* Emit Errors *)
 procedure Throw(error: Error)
   e = make_error error;
@@ -317,6 +323,20 @@ procedure RequireAccessToTransfer(token_owner: ByStr20, token_id: Uint256)
   end
 end
 
+procedure RequireIsAllowedToTransfer(token_owner: ByStr20, token_id: Uint256)
+
+  status <- is_transferable;
+  match status with
+  | False =>
+    (* Only contract owner can perform transfer  *)
+    RequireContractOwner
+  | True =>
+    (* Token owner, spender or operator can perform transfer *)
+    RequireAccessToTransfer token_owner token_id
+  end
+
+end
+
 procedure UpdateBalance(operation: Operation, address: ByStr20)
   match operation with
   | Add =>
@@ -429,9 +449,7 @@ procedure TransferToken(to: ByStr20, token_id: Uint256)
     error = TokenNotFoundError;
     Throw error
   | Some token_owner =>   
-    (* only the contract owner can transfer tokens *)
-    RequireContractOwner;
-
+    RequireIsAllowedToTransfer token_owner token_id;
     RequireNotSelf token_owner to;
     
     (* change token_owner for that token_id *)
@@ -567,6 +585,34 @@ transition Unpause()
   msgs = one_msg msg_to_sender;
   send msgs
 end
+
+(* Sets if tokens in this contract can be transferred or not. *)
+(* If false, only the contract owner can transfer the tokens *)
+(* If true, the token owner/spender/operator can perform the transfer *)
+(* @Requirements: *)
+(* - `_sender` must be the contract owner. Otherwise, it must throw `NotContractOwnerError` *)
+transition SetTransferable(status: Bool)
+  RequireContractOwner;
+
+  is_transferable := status;
+  e = {
+    _eventname: "SetTransferable";
+    is_transferable: status
+  };
+  event e;
+  msg_to_sender = {
+    _tag: "ZRC6_SetTransferableCallback";
+    _recipient: _sender;
+    _amount: Uint128 0;
+    is_transferable: status
+  };
+  msgs = one_msg msg_to_sender;
+  send msgs
+end
+
+
+
+
 
 (* Sets `to` as the royalty recipient. *)
 (* @param: to - Royalty recipient address  *)
